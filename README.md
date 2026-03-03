@@ -1,36 +1,248 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Padel League Tracker
 
-## Getting Started
+A web application to track padel match results for a weekly league with real-time standings and filtering by time period.
 
-First, run the development server:
+## Features
 
+- **Player Management**: Add and manage players
+- **Match Recording**: Record match results with winner/loser
+- **Scoring System**: 3 points for win, 1 point for loss
+- **Leaderboard**: View rankings filtered by month, quarter, year, or all-time
+- **Match History**: View all recorded matches
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Technology Stack
+
+- **Framework**: Next.js 16 (React) with App Router
+- **Database**: SQLite (local development) / PostgreSQL (production)
+- **Styling**: Tailwind CSS
+- **ORM**: Prisma
+- **Deployment**: Vercel (free tier)
+
+## Prerequisites
+
+- Node.js 20.9.0 or higher
+- npm or yarn
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Set up the database:
+```bash
+npx prisma migrate dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Learn More
+## Database Schema
 
-To learn more about Next.js, take a look at the following resources:
+### Players
+- `id`: Unique identifier
+- `name`: Player name (unique)
+- `createdAt`: Timestamp when player was created
+- `updatedAt`: Timestamp when player was updated
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Matches
+- `id`: Unique identifier
+- `winnerId`: Reference to winning player
+- `loserId`: Reference to losing player
+- `playedAt`: Date when match was played
+- `createdAt`: Timestamp when match was recorded
+- `updatedAt`: Timestamp when match was updated
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment to Vercel
 
-## Deploy on Vercel
+### Option 1: Deploy via Vercel CLI
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Install Vercel CLI:
+```bash
+npm i -g vercel
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. Deploy:
+```bash
+vercel
+```
+
+3. Add Vercel Postgres database:
+   - Go to your project dashboard on vercel.com
+   - Navigate to Storage tab
+   - Create a new Postgres database
+   - Connect it to your project
+
+4. Update database connection:
+   - Vercel will automatically set the `DATABASE_URL` environment variable
+   - Update `prisma/schema.prisma` datasource to use PostgreSQL:
+   ```prisma
+   datasource db {
+     provider = "postgresql"
+     url      = env("DATABASE_URL")
+   }
+   ```
+
+5. Run migrations on production:
+```bash
+vercel env pull .env.local
+npx prisma migrate deploy
+```
+
+### Option 2: Deploy via GitHub
+
+1. Push your code to GitHub
+
+2. Import project on Vercel:
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Vercel will auto-detect Next.js settings
+
+3. Add Vercel Postgres:
+   - In project dashboard, go to Storage
+   - Create Postgres database
+   - Connect to project
+
+4. Update schema for PostgreSQL (same as above)
+
+5. Add build command to run migrations:
+   - In project settings, update build command to:
+   ```bash
+   npx prisma generate && npx prisma migrate deploy && next build
+   ```
+
+## Project Structure
+
+```
+padel-league/
+├── app/
+│   ├── page.tsx              # Main leaderboard view
+│   ├── layout.tsx            # Root layout
+│   ├── players/
+│   │   └── page.tsx          # Player management
+│   ├── matches/
+│   │   ├── page.tsx          # Match history
+│   │   └── new/
+│   │       └── page.tsx      # Add new match
+│   └── api/
+│       ├── players/
+│       │   └── route.ts      # Player CRUD operations
+│       └── matches/
+│           └── route.ts      # Match CRUD operations
+├── components/
+│   ├── Leaderboard.tsx       # Main standings table
+│   ├── TimeFilter.tsx        # Period selector
+├── lib/
+│   ├── prisma.ts             # Prisma client singleton
+│   └── scoring.ts            # Scoring calculation logic
+└── prisma/
+    └── schema.prisma         # Database schema
+```
+
+## Usage
+
+### Adding Players
+
+1. Click "Manage Players" on the home page
+2. Enter player name and click "Add Player"
+3. Player will appear in the list
+
+### Recording Matches
+
+1. Click "Add Match" on the home page
+2. Select winner from dropdown
+3. Select loser from dropdown
+4. Choose match date (defaults to today)
+5. Click "Save Match"
+
+### Viewing Standings
+
+- Home page shows current standings
+- Use filter buttons to view:
+  - **Month**: Current month only
+  - **Quarter**: Current quarter (Q1-Q4)
+  - **Year**: Current year
+  - **All-Time**: All matches ever played
+
+### Match History
+
+- Click "Match History" to view all matches
+- Shows date, winner, and loser for each match
+- Sorted by most recent first
+
+## Scoring System
+
+- **Win**: +3 points
+- **Loss**: +1 point
+- **Rankings**: Sorted by total points (descending), then alphabetically by name
+
+## Free Tier Limits
+
+### Vercel Free Tier
+- Unlimited public repositories
+- 100 GB bandwidth/month
+- 100 hours serverless execution/month
+- Custom domain support
+
+### Vercel Postgres Free Tier
+- 256 MB storage (plenty for small league)
+- 60 hours compute time/month
+
+## Development
+
+### Running Prisma Studio
+
+View and edit database records:
+```bash
+npx prisma studio
+```
+
+### Resetting Database
+
+```bash
+npx prisma migrate reset
+```
+
+### Updating Schema
+
+1. Edit `prisma/schema.prisma`
+2. Create migration:
+```bash
+npx prisma migrate dev --name migration_name
+```
+
+## Troubleshooting
+
+### Node Version Issues
+
+If you get Node version errors, ensure you're using Node.js 20.9.0 or higher:
+```bash
+node --version
+```
+
+You can use [nvm](https://github.com/nvm-sh/nvm) to manage Node versions:
+```bash
+nvm install 20
+nvm use 20
+```
+
+### Database Connection Issues
+
+Check that `.env` file exists and contains:
+```
+DATABASE_URL="file:./dev.db"
+```
+
+For production (PostgreSQL), Vercel will set this automatically.
+
+## License
+
+MIT
